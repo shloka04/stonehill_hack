@@ -194,7 +194,7 @@ class PetCard extends StatelessWidget {
                 Icon(Icons.pets, size: 100, color: Colors.grey),
                 SizedBox(height: 8),
                 Text(
-                  'Image not there',
+                  'Image unavailable',
                   style: TextStyle(color: Colors.grey),
                 ),
               ],

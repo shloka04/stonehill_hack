@@ -7,7 +7,12 @@ import '../models/preference_vector.dart';
 class RecommendationService {
   PreferenceVector _preferenceVector;
   final List<Swipe> _swipeHistory = [];
-  
+
+  // Likes recorded since the last retrain. Kept separate from _swipeHistory
+  // so each like is learned from exactly once.
+  final List<Swipe> _pendingLikes = [];
+  int _swipesSinceRetrain = 0;
+
   static const int _maxSwipeHistory = 25;
   static const int _retrainInterval = 5;
   static const double _learningRate = 0.15;
@@ -21,34 +26,48 @@ class RecommendationService {
 
   void recordSwipe(Pet pet, bool liked) {
     final swipe = Swipe.fromPet(pet.id, pet.featureVector, liked);
-    
+
     _swipeHistory.add(swipe);
-    
+
     if (_swipeHistory.length > _maxSwipeHistory) {
       _swipeHistory.removeAt(0);
     }
 
-    if (_swipeHistory.length % _retrainInterval == 0) {
+    if (liked) {
+      _pendingLikes.add(swipe);
+    }
+
+    // Count swipes directly rather than testing _swipeHistory.length, which
+    // stops growing once the history hits its cap.
+    _swipesSinceRetrain++;
+    if (_swipesSinceRetrain >= _retrainInterval) {
+      _swipesSinceRetrain = 0;
       _retrain();
     }
   }
 
   void _retrain() {
-    final likedSwipes = _swipeHistory.where((s) => s.liked).toList();
-    
-    if (likedSwipes.isEmpty) return;
+    if (_pendingLikes.isEmpty) return;
 
-    for (final swipe in likedSwipes) {
+    for (final swipe in _pendingLikes) {
       _preferenceVector.update(swipe.petFeatures, _learningRate);
     }
+
+    _pendingLikes.clear();
   }
 
   double _calculateBaseScore(Pet pet, UserProfile userProfile) {
     int score = 0;
-    int factors = 0;
+    // Points available from the criteria this profile actually filled in.
+    // Dividing by a fixed 100 would score a half-filled profile as a poor
+    // match rather than an incomplete one.
+    int available = 0;
+
+    final petSize = pet.size.toLowerCase();
+    final petEnergy = pet.energyLevel.toLowerCase();
 
     if (userProfile.budget != null) {
-      factors++;
+      available += 30;
       final budgetDiff = (userProfile.budget! - pet.price).abs();
       if (budgetDiff <= 100) {
         score += 30;
@@ -59,35 +78,41 @@ class RecommendationService {
       }
     }
 
-    if (userProfile.preferredSizes != null && 
-        userProfile.preferredSizes!.contains(pet.size)) {
-      score += 25;
-      factors++;
+    final preferredSizes = userProfile.preferredSizes;
+    if (preferredSizes != null && preferredSizes.isNotEmpty) {
+      available += 25;
+      if (preferredSizes.map((s) => s.toLowerCase()).contains(petSize)) {
+        score += 25;
+      }
     }
 
-    if (userProfile.homeSize != null) {
-      factors++;
-      final Map<String, List<String>> compatibleSizes = {
-        'small': ['small'],
-        'medium': ['small', 'medium'],
-        'large': ['small', 'medium', 'large'],
-      };
-      if (compatibleSizes[userProfile.homeSize]!.contains(pet.size)) {
+    const Map<String, List<String>> compatibleSizes = {
+      'small': ['small'],
+      'medium': ['small', 'medium'],
+      'large': ['small', 'medium', 'large'],
+    };
+    // homeSize also arrives straight from Firestore, so an unexpected value
+    // skips this criterion instead of throwing on a null assertion.
+    final allowedSizes = compatibleSizes[userProfile.homeSize?.toLowerCase()];
+    if (allowedSizes != null) {
+      available += 20;
+      if (allowedSizes.contains(petSize)) {
         score += 20;
       }
     }
 
-    if (userProfile.activityLevel != null) {
-      factors++;
-      if (userProfile.activityLevel == pet.energyLevel) {
+    final activityLevel = userProfile.activityLevel?.toLowerCase();
+    if (activityLevel != null) {
+      available += 25;
+      if (activityLevel == petEnergy) {
         score += 25;
-      } else if ((userProfile.activityLevel == 'medium' && pet.energyLevel != 'medium') ||
-                 (pet.energyLevel == 'medium' && userProfile.activityLevel != 'medium')) {
+      } else if (activityLevel == 'medium' || petEnergy == 'medium') {
+        // One step apart: workable, but not an ideal pairing.
         score += 15;
       }
     }
 
-    return factors > 0 ? score / 100.0 : 0.75;
+    return available > 0 ? score / available : 0.75;
   }
 
   double _calculateAdaptiveScore(Pet pet) {
@@ -96,15 +121,22 @@ class RecommendationService {
     }
 
     final petVector = pet.featureVector;
+    final prefVector = _preferenceVector.vector;
+    final length = min(petVector.length, prefVector.length);
+    if (length == 0) return 0.5;
+
     double distance = 0.0;
-    
-    for (int i = 0; i < petVector.length; i++) {
-      final diff = petVector[i] - _preferenceVector.vector[i];
+    for (int i = 0; i < length; i++) {
+      final diff = petVector[i] - prefVector[i];
       distance += diff * diff;
     }
     distance = sqrt(distance);
 
-    final normalizedDistance = (distance / 6.0).clamp(0.0, 1.0);
+    // Every feature runs 1-3, so the furthest two vectors can be is
+    // sqrt(n * 2^2) = 2 * sqrt(n). The old divisor of 6 never let this
+    // score fall below about 0.4.
+    final maxDistance = 2.0 * sqrt(length);
+    final normalizedDistance = (distance / maxDistance).clamp(0.0, 1.0);
     return 1.0 - normalizedDistance;
   }
 

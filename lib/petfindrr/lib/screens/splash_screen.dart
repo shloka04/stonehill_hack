@@ -65,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'PetMatch',
+              'PetFindrr',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 48,
@@ -74,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Find yourINSER TGOOD HTING HERE',
+              'Find your perfect companion',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 18,

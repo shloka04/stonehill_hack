@@ -101,7 +101,7 @@ class _ProfileBuilderScreenState extends State<ProfileBuilderScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'This helps us find placeHOLDERe',
+                  'This helps us find pets that suit you',
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 32),
@@ -116,34 +116,34 @@ class _ProfileBuilderScreenState extends State<ProfileBuilderScreen> {
                   controller: _budgetController,
                   keyboardType: TextInputType.number,
                   validator: (v) {
-                    if (v!.isEmpty) return 'BUDGETTt';
+                    if (v!.isEmpty) return 'Please enter a budget';
                     if (double.tryParse(v) == null) return 'Enter a valid number';
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
                 CustomTextField(
-                  label: 'Location ([citYy and statee]',
+                  label: 'Location (city and state)',
                   controller: _locationController,
                   validator: (v) => v!.isEmpty ? 'Please enter location' : null,
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
-                  'HSIZE OF YOUR HOUSEE',
+                  'Size of your home',
                   ['Small', 'Medium', 'Large'],
                   _homeSize,
                   (value) => setState(() => _homeSize = value.toLowerCase()),
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
-                  'ACTIIVTYYY',
+                  'Your activity level',
                   ['Low', 'Medium', 'High'],
                   _activityLevel,
                   (value) => setState(() => _activityLevel = value.toLowerCase()),
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'SIZEEE',
+                  'Preferred pet size',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),

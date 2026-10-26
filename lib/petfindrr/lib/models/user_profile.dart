@@ -52,9 +52,11 @@ class UserProfile {
     }
   }
 
+  // Same 1-3 scale as Pet.priceScore so the two are directly comparable.
   double get budgetScore {
-    if (budget == null) return 0.5;
-    return (budget! / 2000.0).clamp(0.0, 1.0);
+    if (budget == null) return 2.0;
+    final normalised = (budget! / 2000.0).clamp(0.0, 1.0);
+    return 1.0 + normalised * 2.0;
   }
 
   List<int> get preferredSizeScores {

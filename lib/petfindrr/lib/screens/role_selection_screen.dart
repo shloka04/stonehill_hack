@@ -40,7 +40,7 @@ class RoleSelectionScreen extends StatelessWidget {
               _RoleCard(
                 icon: Icons.favorite,
                 title: 'Find a Pet',
-                description: 'Browse and match with ADJECTIVE pets',
+                description: 'Browse pets near you and match with the ones that fit',
                 color: Colors.pink,
                 onTap: () {
                   Navigator.of(context).push(

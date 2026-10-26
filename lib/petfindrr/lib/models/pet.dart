@@ -54,8 +54,11 @@ class Pet {
     }
   }
 
+  // Scaled to 1-3 like the other features, so price carries equal weight
+  // in the preference-vector distance instead of about a third.
   double get priceScore {
-    return (price / 2000.0).clamp(0.0, 1.0);
+    final normalised = (price / 2000.0).clamp(0.0, 1.0);
+    return 1.0 + normalised * 2.0;
   }
 
   int get ageScore {

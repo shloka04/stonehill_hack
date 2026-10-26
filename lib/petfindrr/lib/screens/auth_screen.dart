@@ -106,7 +106,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 8),
                 Text(
                   widget.role == 'adopter'
-                      ? 'Find your perfect pet companion!!!!!!'
+                      ? 'Find your perfect pet companion'
                       : 'Help pets find loving homes',
                   style: TextStyle(
                     fontSize: 16,
